@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mordle – norsk mordmysterium</title>
+  <meta name="description" content="Mordle – et norsk logikkmysterium. Bruk ledetrådene, fyll ut rutenettet og avslør morderen.">
+  <meta name="theme-color" content="#171226">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mordle">
+
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topp">
+    <button class="ikonknapp" id="knappHjelp" aria-label="Hvordan spille">?</button>
+    <h1>🔎 MORDLE</h1>
+    <div class="topp-hoyre">
+      <button class="ikonknapp" id="knappStats" aria-label="Statistikk">📊</button>
+      <button class="ikonknapp" id="knappNy" aria-label="Ny sak">🔄</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="kort intro" id="intro" aria-live="polite"></section>
+
+    <section class="kort" id="aktorer">
+      <div class="aktor-kolonner">
+        <div><h2>Mistenkte</h2><ul id="listeMistenkte"></ul></div>
+        <div><h2>Våpen</h2><ul id="listeVaapen"></ul></div>
+        <div><h2>Steder</h2><ul id="listeSteder"></ul></div>
+      </div>
+    </section>
+
+    <section class="kort">
+      <h2>Etterforskningstavla</h2>
+      <p class="hint">Trykk på en rute: <span class="mark-x">✗</span> = umulig, <span class="mark-ok">✓</span> = bekreftet</p>
+      <div class="grid-omslag">
+        <table id="grid" aria-label="Logikkrutenett"></table>
+      </div>
+    </section>
+
+    <section class="kort">
+      <h2>Ledetråder</h2>
+      <ol id="ledetraader" class="ledetraader"></ol>
+    </section>
+
+    <section class="kort anklage" id="anklage">
+      <h2>Fell dommen</h2>
+      <div class="anklage-gruppe"><h3>Hvem?</h3><div class="chips" id="chipsHvem"></div></div>
+      <div class="anklage-gruppe"><h3>Med hva?</h3><div class="chips" id="chipsHva"></div></div>
+      <div class="anklage-gruppe"><h3>Hvor?</h3><div class="chips" id="chipsHvor"></div></div>
+      <button id="knappAnklag" class="primaer" disabled>⚖️ Anklag!</button>
+    </section>
+
+    <footer class="bunn">
+      <button class="lenkeknapp" id="knappDel">🔗 Del denne saken</button>
+    </footer>
+  </main>
+
+  <!-- Resultat -->
+  <dialog id="dialogResultat" class="dialog">
+    <div class="dialog-innhold" id="resultatInnhold"></div>
+  </dialog>
+
+  <!-- Hjelp -->
+  <dialog id="dialogHjelp" class="dialog">
+    <div class="dialog-innhold">
+      <h2>Slik spiller du 🕵️</h2>
+      <p>Ett mord. Tre mistenkte, tre våpen, tre steder. <strong>Én</strong> kombinasjon er riktig.</p>
+      <ul class="hjelpliste">
+        <li>Hver mistenkt var på <em>sitt eget</em> sted, og hvert våpen lå på <em>sitt eget</em> sted.</li>
+        <li>Morderen er den som var på åstedet – med våpenet som lå der.</li>
+        <li>Les ledetrådene og trykk i rutenettet: <span class="mark-x">✗</span> for umulig, <span class="mark-ok">✓</span> for bekreftet. Når du setter en <span class="mark-ok">✓</span>, krysses resten av raden og kolonnen ut automatisk.</li>
+        <li>Trykk på en ledetråd for å streke den over når du er ferdig med den.</li>
+        <li>Til slutt: velg hvem, hva og hvor – og <strong>anklag</strong>!</li>
+      </ul>
+      <p class="hint">Tips: Legg til Mordle på hjemskjermen for å spille som app – del-knappen i Safari → «Legg til på Hjem-skjerm».</p>
+      <button class="primaer" data-lukk>Skjønner!</button>
+    </div>
+  </dialog>
+
+  <!-- Statistikk -->
+  <dialog id="dialogStats" class="dialog">
+    <div class="dialog-innhold">
+      <h2>Statistikk 📊</h2>
+      <div class="stats-rad" id="statsInnhold"></div>
+      <button class="primaer" data-lukk>Lukk</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

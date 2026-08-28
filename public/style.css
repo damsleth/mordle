@@ -1,0 +1,311 @@
+/* Mordle – mørkt detektivtema, mobil først */
+
+:root {
+  --bg: #171226;
+  --kort: #221b38;
+  --kort-kant: #352a55;
+  --tekst: #ece5f8;
+  --tekst-dus: #a99cc9;
+  --gull: #e8b64c;
+  --gull-dyp: #c2913a;
+  --roed: #e2555f;
+  --groenn: #6fd08c;
+  --celle: #2b2247;
+  --celle-kant: #443767;
+  --radius: 14px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--tekst);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Topp ---------- */
+
+.topp {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--kort-kant);
+}
+
+.topp h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.14em;
+  color: var(--gull);
+  text-shadow: 0 2px 12px rgba(232, 182, 76, 0.25);
+}
+
+.topp-hoyre { display: flex; gap: 8px; }
+
+.ikonknapp {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--kort-kant);
+  background: var(--kort);
+  color: var(--tekst);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.ikonknapp:active { transform: scale(0.93); }
+
+/* ---------- Kort ---------- */
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 12px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kort {
+  background: var(--kort);
+  border: 1px solid var(--kort-kant);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.kort h2 {
+  margin: 0 0 8px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  color: var(--gull);
+  letter-spacing: 0.05em;
+}
+
+.intro {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  color: var(--tekst);
+  border-left: 4px solid var(--gull);
+}
+
+.hint { font-size: 0.8rem; color: var(--tekst-dus); margin: 0 0 10px; }
+
+.mark-x { color: var(--roed); font-weight: 700; }
+.mark-ok { color: var(--groenn); font-weight: 700; }
+
+/* ---------- Aktører ---------- */
+
+.aktor-kolonner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.aktor-kolonner h2 { font-size: 0.85rem; margin-bottom: 6px; }
+.aktor-kolonner ul { list-style: none; margin: 0; padding: 0; }
+.aktor-kolonner li {
+  font-size: 0.78rem;
+  color: var(--tekst-dus);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.aktor-kolonner li .emoji { font-size: 1rem; }
+
+/* ---------- Rutenett ---------- */
+
+.grid-omslag { overflow-x: auto; }
+
+#grid {
+  border-collapse: collapse;
+  margin: 0 auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#grid th, #grid td {
+  padding: 0;
+  text-align: center;
+}
+
+#grid th {
+  font-size: 1.25rem;
+  font-weight: 400;
+  width: 46px;
+  height: 46px;
+}
+
+#grid th.rad-hode { text-align: right; padding-right: 6px; }
+
+#grid td.celle {
+  width: 46px;
+  height: 46px;
+  background: var(--celle);
+  border: 1px solid var(--celle-kant);
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+#grid td.celle:active { filter: brightness(1.3); }
+#grid td.tom { background: transparent; border: none; cursor: default; }
+
+#grid td.celle.x { color: var(--roed); }
+#grid td.celle.x.auto { color: color-mix(in srgb, var(--roed) 45%, var(--celle)); }
+#grid td.celle.ok { color: var(--groenn); background: color-mix(in srgb, var(--groenn) 12%, var(--celle)); }
+
+/* skillelinjer mellom blokkene */
+#grid .blokk-hoyre { border-right: 3px solid var(--gull-dyp) !important; }
+#grid .blokk-bunn { border-bottom: 3px solid var(--gull-dyp) !important; }
+
+/* ---------- Ledetråder ---------- */
+
+.ledetraader {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ledetraader li {
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.ledetraader li::marker { color: var(--gull); font-weight: 700; }
+.ledetraader li.strek {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+
+/* ---------- Anklage ---------- */
+
+.anklage-gruppe h3 {
+  margin: 10px 0 6px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tekst-dus);
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+  border: 1px solid var(--kort-kant);
+  background: var(--celle);
+  color: var(--tekst);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.chip.valgt {
+  border-color: var(--gull);
+  background: color-mix(in srgb, var(--gull) 18%, var(--celle));
+  color: var(--gull);
+  font-weight: 700;
+}
+
+.primaer {
+  margin-top: 16px;
+  width: 100%;
+  padding: 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--gull), var(--gull-dyp));
+  color: #241a05;
+  cursor: pointer;
+}
+.primaer:disabled { opacity: 0.4; cursor: not-allowed; }
+.primaer:not(:disabled):active { transform: scale(0.98); }
+
+/* ---------- Bunn ---------- */
+
+.bunn { text-align: center; }
+.lenkeknapp {
+  background: none;
+  border: none;
+  color: var(--tekst-dus);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 8px;
+}
+
+/* ---------- Dialoger ---------- */
+
+.dialog {
+  border: 1px solid var(--kort-kant);
+  border-radius: var(--radius);
+  background: var(--kort);
+  color: var(--tekst);
+  max-width: min(92vw, 440px);
+  padding: 0;
+}
+.dialog::backdrop { background: rgba(10, 6, 20, 0.75); }
+.dialog-innhold { padding: 20px; }
+.dialog-innhold h2 {
+  margin: 0 0 10px;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--gull);
+}
+.hjelpliste { padding-left: 1.2em; margin: 10px 0; }
+.hjelpliste li { margin-bottom: 8px; font-size: 0.92rem; }
+
+.resultat-emoji { font-size: 3rem; text-align: center; margin: 4px 0; }
+.resultat-tekst { font-family: Georgia, serif; font-style: italic; }
+.fasit {
+  background: var(--celle);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-size: 0.95rem;
+}
+.fasit div { margin: 4px 0; }
+
+.stats-rad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  text-align: center;
+  margin: 14px 0;
+}
+.stats-tall { font-size: 1.8rem; font-weight: 800; color: var(--gull); }
+.stats-navn { font-size: 0.72rem; color: var(--tekst-dus); text-transform: uppercase; letter-spacing: 0.06em; }
+
+.sekundaer {
+  margin-top: 8px;
+  width: 100%;
+  padding: 12px;
+  font-size: 0.95rem;
+  border: 1px solid var(--kort-kant);
+  border-radius: var(--radius);
+  background: var(--celle);
+  color: var(--tekst);
+  cursor: pointer;
+}
+
+/* Små skjermer: krymp cellene litt så alt får plass uten scrolling */
+@media (max-width: 400px) {
+  #grid th, #grid td.celle { width: 40px; height: 40px; }
+  #grid th { font-size: 1.1rem; }
+  #grid td.celle { font-size: 1.15rem; }
+}
