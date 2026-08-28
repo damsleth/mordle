@@ -10,6 +10,12 @@
     "not_found_handling": "single-page-application"
   },
   "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "mordle.damsleth.no",
+      "custom_domain": true
+    }
+  ],
   "env": {
     "preview": {
       "name": "mordle-preview",
