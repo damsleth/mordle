@@ -1,0 +1,12 @@
+// Mordle – assets-only Cloudflare Worker.
+// Deploy: npx wrangler deploy
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mordle",
+  "compatibility_date": "2025-08-01",
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "single-page-application"
+  }
+}
