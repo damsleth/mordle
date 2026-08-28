@@ -1,0 +1,15 @@
+{
+  "name": "mordle",
+  "version": "1.0.0",
+  "description": "Mordle – et norsk mordmysterium i nettleseren. Logikkgåte à la Murdle, som PWA på Cloudflare Workers.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test tests/generator.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
