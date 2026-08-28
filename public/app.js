@@ -3,7 +3,9 @@ import { lagSak } from '/game.js';
 
 const $ = (sel) => document.querySelector(sel);
 
-const LAGRING_SPILL = 'mordle-spill';
+// v2: rutenettet ble flippet (mistenkte øverst), så gamle lagrede merker
+// ville blitt feiltolket under ny layout.
+const LAGRING_SPILL = 'mordle-spill-v2';
 const LAGRING_STATS = 'mordle-stats';
 const LAGRING_HJELP = 'mordle-hjelp-vist';
 
@@ -119,19 +121,20 @@ function renderAktorer() {
   $('#listeSteder').innerHTML = lag(sak.steder);
 }
 
-// Rutenett: rader = mistenkte (0-2) + steder (3-5), kolonner = våpen (0-2) + steder (3-5).
+// Rutenett som i boken: mistenkte øverst.
+// Kolonner = mistenkte (0-2) + steder (3-5), rader = våpen (0-2) + steder (3-5).
 // Blokken steder×steder (nede til høyre) brukes ikke.
 function renderGrid() {
   const t = $('#grid');
   let html = '<tr><th></th>';
   for (let c = 0; c < 6; c++) {
-    const a = c < 3 ? sak.vaapen[c] : sak.steder[c - 3];
+    const a = c < 3 ? sak.mistenkte[c] : sak.steder[c - 3];
     html += `<th class="${c === 2 ? 'blokk-hoyre' : ''}" title="${a.navn}">${a.emoji}</th>`;
   }
   html += '</tr>';
 
   for (let r = 0; r < 6; r++) {
-    const radAktor = r < 3 ? sak.mistenkte[r] : sak.steder[r - 3];
+    const radAktor = r < 3 ? sak.vaapen[r] : sak.steder[r - 3];
     html += `<tr><th class="rad-hode ${r === 2 ? 'blokk-bunn' : ''}" title="${radAktor.navn}">${radAktor.emoji}</th>`;
     for (let c = 0; c < 6; c++) {
       const klasser = [];
@@ -156,8 +159,8 @@ function renderGrid() {
 }
 
 function cellebeskrivelse(r, c) {
-  const rad = r < 3 ? sak.mistenkte[r].navn : sak.steder[r - 3].navn;
-  const kol = c < 3 ? sak.vaapen[c].navn : sak.steder[c - 3].navn;
+  const rad = r < 3 ? sak.vaapen[r].navn : sak.steder[r - 3].navn;
+  const kol = c < 3 ? sak.mistenkte[c].navn : sak.steder[c - 3].navn;
   return `${storBokstav(rad)} / ${kol}`;
 }
 
