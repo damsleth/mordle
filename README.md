@@ -1,6 +1,7 @@
 # 🔎 Mordle
 
 Et norskspråklig mordmysterium i nettleseren, inspirert av [Murdle](https://murdle.com).
+Spilles på [mordle.damsleth.no](https://mordle.damsleth.no).
 Tre mistenkte, tre våpen, tre steder – og nøyaktig én løsning. Bruk ledetrådene,
 fyll ut etterforskningstavla og avslør morderen.
 
