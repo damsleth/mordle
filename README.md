@@ -37,9 +37,14 @@ npx wrangler login
 npm run deploy
 ```
 
-Automatisk: workflowen i `.github/workflows/deploy.yml` deployer ved push til
-`main`. Legg inn et Cloudflare API-token (med tilgangen *Workers Scripts: Edit*)
-som repository secret `CLOUDFLARE_API_TOKEN`.
+Automatisk (samme oppsett som blog.damsleth.no):
+
+- `deploy-worker.yml` – tester og deployer ved push til `main`
+- `deploy-worker-preview.yml` – deployer PR-er til `mordle-preview` på
+  workers.dev og kommenterer preview-URL-en på PR-en
+
+Begge krever repository secrets `CLOUDFLARE_API_TOKEN` (med *Workers Scripts:
+Edit*) og `CLOUDFLARE_ACCOUNT_ID`.
 
 ## Struktur
 
