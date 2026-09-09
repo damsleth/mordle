@@ -1,5 +1,5 @@
 // Mordle – UI og spilltilstand
-import { lagSak, NIVAAER } from '/game.js';
+import { lagSak, dagensSeed, NIVAAER } from '/game.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -36,6 +36,7 @@ let marks = {};        // "r,c" -> 'x' | 'ok' (kun det brukeren selv har satt)
 let strek = new Set(); // ledetråd-indekser som er streket over
 let bom = 0;           // feilanklager i denne saken
 let loest = false;
+let dagens = null;     // 'YYYY-MM-DD' når saken er dagens sak
 let valgtAnklage = { hvem: null, hva: null, hvor: null };
 let valgtNiva = localStorage.getItem(LAGRING_NIVA) || 'middels';
 
@@ -45,11 +46,17 @@ function nyttSeed() {
   return (crypto.getRandomValues(new Uint32Array(1))[0] % 900000000) + 1;
 }
 
+function idag() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function sakFraHash() {
+  if (/sak=dagens/.test(location.hash)) return { seed: dagensSeed(), niva: 'middels', dagens: idag() };
   const m = location.hash.match(/sak=(\d+)/);
   if (!m) return null;
   const niva = location.hash.match(/niva=(\w+)/)?.[1];
-  return { seed: Number(m[1]), niva: NIVAAER[niva] ? niva : 'middels' };
+  return { seed: Number(m[1]), niva: NIVAAER[niva] ? niva : 'middels', dagens: null };
 }
 
 function start() {
@@ -60,9 +67,9 @@ function start() {
   // Ellers styrer lagret tilstand – og en løst sak gir ny sak, ikke reprise.
   const erDelt = fraHash && !(lagret && lagret.seed === fraHash.seed && lagret.niva === fraHash.niva);
   if (erDelt) {
-    lastSak(fraHash.seed, fraHash.niva, null);
+    lastSak(fraHash.seed, fraHash.niva, null, fraHash.dagens);
   } else if (lagret && !lagret.loest) {
-    lastSak(lagret.seed, lagret.niva, lagret);
+    lastSak(lagret.seed, lagret.niva, lagret, lagret.dagens);
   } else {
     lastSak(nyttSeed(), valgtNiva, null);
   }
@@ -73,20 +80,35 @@ function start() {
   }
 }
 
-function lastSak(seed, niva, lagret) {
+function lastSak(seed, niva, lagret, dagensDato = null) {
   sak = lagSak(seed, niva);
   marks = lagret?.marks ?? {};
   strek = new Set(lagret?.strek ?? []);
   bom = lagret?.bom ?? 0;
   loest = lagret?.loest ?? false;
+  dagens = dagensDato;
   valgtAnklage = { hvem: null, hva: null, hvor: null };
-  history.replaceState(null, '', sakUrl(sak).replace(location.origin, ''));
+  history.replaceState(null, '', sakUrl(sak, dagens).replace(location.origin, ''));
   lagreSpill();
   renderAlt();
 }
 
-function sakUrl(s) {
+function sakUrl(s, erDagens = false) {
+  if (erDagens) return `${location.origin}/#sak=dagens`;
   return `${location.origin}/#sak=${s.seed}${s.niva === 'middels' ? '' : `&niva=${s.niva}`}`;
+}
+
+function dagensSak() {
+  const lagret = lesJson(LAGRING_SPILL);
+  const dato = idag();
+  const fortsett = lagret?.dagens === dato ? lagret : null;
+  lastSak(dagensSeed(), 'middels', fortsett, dato);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function penDato(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${d}.${m}.${y}`;
 }
 
 function nySak(niva = valgtNiva) {
@@ -105,13 +127,13 @@ function lesJson(nokkel) {
 function lagreSpill() {
   try {
     localStorage.setItem(LAGRING_SPILL, JSON.stringify({
-      seed: sak.seed, niva: sak.niva, marks, strek: [...strek], bom, loest,
+      seed: sak.seed, niva: sak.niva, dagens, marks, strek: [...strek], bom, loest,
     }));
   } catch { /* privat modus e.l. – spillet funker fint uten lagring */ }
 }
 
 function hentStats() {
-  return { loeste: 0, perfekte: 0, bom: 0, ...lesJson(LAGRING_STATS) };
+  return { loeste: 0, perfekte: 0, bom: 0, dagensStreak: 0, sisteDagens: null, ...lesJson(LAGRING_STATS) };
 }
 
 function lagreStats(s) {
@@ -132,7 +154,7 @@ function renderIntro() {
   const intro = INTROER[sak.seed % INTROER.length](storBokstav(sak.offer), sak.aasted);
   const antall = ['', '', '', 'Tre', 'Fire'][sak.n];
   $('#intro').innerHTML =
-    `<span class="sak-badge">Sak #${sak.seed} · ${NIVAAER[sak.niva].navn}</span>` +
+    `<span class="sak-badge">${dagens ? `🗓️ Dagens sak ${penDato(dagens)}` : `Sak #${sak.seed} · ${NIVAAER[sak.niva].navn}`}</span>` +
     intro +
     `${antall} personer var til stede den kvelden – én av dem er morderen. ` +
     `Finn ut <strong>hvem</strong> som gjorde det, <strong>hva</strong> som ble brukt, og <strong>hvor</strong> det skjedde.`;
@@ -259,6 +281,12 @@ function anklag() {
     loest = true;
     stats.loeste++;
     if (bom === 0) stats.perfekte++;
+    if (dagens && stats.sisteDagens !== dagens) {
+      const igaar = new Date(dagens);
+      igaar.setDate(igaar.getDate() - 1);
+      stats.dagensStreak = stats.sisteDagens === igaar.toISOString().slice(0, 10) ? stats.dagensStreak + 1 : 1;
+      stats.sisteDagens = dagens;
+    }
     lagreStats(stats);
     lagreSpill();
 
@@ -273,9 +301,17 @@ function anklag() {
       med ${v.navn} ${v.emoji} ${s.prep} ${s.navn} ${s.emoji}.</p>
       <p class="resultat-tekst">Under pågripelsen ropte ${m.navn}: ${sitat}</p>
       ${bom > 0 ? `<p class="hint">Oppklart med ${bom} feilanklage${bom === 1 ? '' : 'r'}.</p>` : '<p class="hint">Perfekt etterforskning – ingen feilanklager! 🌟</p>'}
-      <button class="primaer" id="knappNesteSak">🔎 Ny sak (${NIVAAER[sak.niva].navn.toLowerCase()})</button>
+      ${dagens
+        ? `<button class="primaer" id="knappDelResultat">📤 Del resultatet</button>`
+        : `<button class="primaer" id="knappNesteSak">🔎 Ny sak (${NIVAAER[sak.niva].navn.toLowerCase()})</button>`}
       <button class="sekundaer" data-lukk>Lukk</button>`;
-    $('#knappNesteSak').onclick = () => { $('#dialogResultat').close(); nySak(sak.niva); };
+    if (dagens) {
+      $('#knappDelResultat').onclick = () => del(
+        `Mordle ${penDato(dagens)} – oppklart ${bom === 0 ? 'uten feil 🌟' : `med ${bom} feilanklage${bom === 1 ? '' : 'r'} 🔎`}`,
+        sakUrl(sak, true), $('#knappDelResultat'));
+    } else {
+      $('#knappNesteSak').onclick = () => { $('#dialogResultat').close(); nySak(sak.niva); };
+    }
   } else {
     bom++;
     stats.bom++;
@@ -305,22 +341,28 @@ function visStats() {
   $('#statsInnhold').innerHTML = `
     <div><div class="stats-tall">${s.loeste}</div><div class="stats-navn">Oppklarte saker</div></div>
     <div><div class="stats-tall">${s.perfekte}</div><div class="stats-navn">Uten feil</div></div>
-    <div><div class="stats-tall">${s.bom}</div><div class="stats-navn">Feilanklager</div></div>`;
+    <div><div class="stats-tall">${s.bom}</div><div class="stats-navn">Feilanklager</div></div>
+    <div><div class="stats-tall">${s.dagensStreak} 🔥</div><div class="stats-navn">Dagens-streak</div></div>`;
   $('#dialogStats').showModal();
 }
 
-async function delSak() {
-  const url = sakUrl(sak);
-  const data = { title: 'Mordle', text: `Klarer du å oppklare sak #${sak.seed} (${NIVAAER[sak.niva].navn.toLowerCase()})? 🔎`, url };
+async function del(tekst, url, knapp) {
   if (navigator.share) {
-    try { await navigator.share(data); return; } catch { /* avbrutt */ }
+    try { await navigator.share({ title: 'Mordle', text: tekst, url }); return; } catch { /* avbrutt */ }
   }
   try {
-    await navigator.clipboard.writeText(url);
-    const knapp = $('#knappDel');
-    knapp.textContent = '✅ Lenke kopiert!';
-    setTimeout(() => { knapp.textContent = '🔗 Del denne saken'; }, 2000);
+    await navigator.clipboard.writeText(`${tekst}\n${url}`);
+    const opprinnelig = knapp.textContent;
+    knapp.textContent = '✅ Kopiert!';
+    setTimeout(() => { knapp.textContent = opprinnelig; }, 2000);
   } catch { prompt('Kopier lenken:', url); }
+}
+
+function delSak() {
+  const tekst = dagens
+    ? `Klarer du dagens Mordle-sak? 🔎`
+    : `Klarer du å oppklare sak #${sak.seed} (${NIVAAER[sak.niva].navn.toLowerCase()})? 🔎`;
+  del(tekst, sakUrl(sak, dagens), $('#knappDel'));
 }
 
 function koblLukkeknapper(dialog) {
@@ -361,6 +403,7 @@ document.addEventListener('click', (e) => {
 $('#knappAnklag').addEventListener('click', anklag);
 $('#knappNy').addEventListener('click', () => { renderNivaValg(); $('#dialogNy').showModal(); });
 $('#knappStartNy').addEventListener('click', () => { $('#dialogNy').close(); nySak(valgtNiva); });
+$('#knappDagens').addEventListener('click', () => { $('#dialogNy').close(); dagensSak(); });
 $('#knappHjelp').addEventListener('click', () => $('#dialogHjelp').showModal());
 $('#knappStats').addEventListener('click', visStats);
 $('#knappDel').addEventListener('click', delSak);
