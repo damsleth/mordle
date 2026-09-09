@@ -1,13 +1,13 @@
 // Mordle – UI og spilltilstand
-import { lagSak } from '/game.js';
+import { lagSak, NIVAAER } from '/game.js';
 
 const $ = (sel) => document.querySelector(sel);
 
-// v2: rutenettet ble flippet (mistenkte øverst), så gamle lagrede merker
-// ville blitt feiltolket under ny layout.
-const LAGRING_SPILL = 'mordle-spill-v2';
+// v3: saker har nivå og N kan være 4, så gamle lagrede merker passer ikke.
+const LAGRING_SPILL = 'mordle-spill-v3';
 const LAGRING_STATS = 'mordle-stats';
 const LAGRING_HJELP = 'mordle-hjelp-vist';
+const LAGRING_NIVA = 'mordle-niva';
 
 const TILSTAAELSER = [
   '«Det var jo bare et uhell … åtte ganger på rad!»',
@@ -16,6 +16,19 @@ const TILSTAAELSER = [
   '«Hen hadde det komme til hen!»',
   '«Alt var perfekt planlagt. Bortsett fra deg, detektiv.»',
   '«Brunosten var min. MIN, hører du!»',
+  '«Dere skulle sett hva hen gjorde med hagen min!»',
+  '«Jeg ville bare låne den. Så gikk det galt.»',
+  '«Det var ikke jeg! … Ok, det var jeg.»',
+  '«Ingen jury i Norge vil dømme meg. Ingen!»',
+  '«Hen jukset i Ludo. I LUDO!»',
+  '«Alt hadde gått bra om det ikke var for den fordømte katten.»',
+];
+
+const INTROER = [
+  (offer, aasted) => `💀 <strong>${offer}</strong> er funnet død på <strong>${aasted}</strong>. `,
+  (offer, aasted) => `🌩️ En stormfull natt på <strong>${aasted}</strong>: <strong>${offer}</strong> ligger livløs på gulvet. `,
+  (offer, aasted) => `🔔 Klokka slo tolv på <strong>${aasted}</strong> da skriket kom. <strong>${offer}</strong> var død. `,
+  (offer, aasted) => `🕯️ Middagen på <strong>${aasted}</strong> tok en brå slutt: <strong>${offer}</strong> reiste seg aldri fra bordet. `,
 ];
 
 let sak = null;
@@ -24,6 +37,7 @@ let strek = new Set(); // ledetråd-indekser som er streket over
 let bom = 0;           // feilanklager i denne saken
 let loest = false;
 let valgtAnklage = { hvem: null, hva: null, hvor: null };
+let valgtNiva = localStorage.getItem(LAGRING_NIVA) || 'middels';
 
 // ---------- Oppstart ----------
 
@@ -31,25 +45,27 @@ function nyttSeed() {
   return (crypto.getRandomValues(new Uint32Array(1))[0] % 900000000) + 1;
 }
 
-function seedFraHash() {
+function sakFraHash() {
   const m = location.hash.match(/sak=(\d+)/);
-  return m ? Number(m[1]) : null;
+  if (!m) return null;
+  const niva = location.hash.match(/niva=(\w+)/)?.[1];
+  return { seed: Number(m[1]), niva: NIVAAER[niva] ? niva : 'middels' };
 }
 
 function start() {
-  const hashSeed = seedFraHash();
+  const fraHash = sakFraHash();
   const lagret = lesJson(LAGRING_SPILL);
 
-  let seed;
-  if (hashSeed) {
-    seed = hashSeed;
+  // Hashen vinner bare når den peker på en annen sak enn den lagrede (= delt lenke).
+  // Ellers styrer lagret tilstand – og en løst sak gir ny sak, ikke reprise.
+  const erDelt = fraHash && !(lagret && lagret.seed === fraHash.seed && lagret.niva === fraHash.niva);
+  if (erDelt) {
+    lastSak(fraHash.seed, fraHash.niva, null);
   } else if (lagret && !lagret.loest) {
-    seed = lagret.seed;
+    lastSak(lagret.seed, lagret.niva, lagret);
   } else {
-    seed = nyttSeed();
+    lastSak(nyttSeed(), valgtNiva, null);
   }
-
-  lastSak(seed, lagret && lagret.seed === seed ? lagret : null);
 
   if (!localStorage.getItem(LAGRING_HJELP)) {
     $('#dialogHjelp').showModal();
@@ -57,20 +73,26 @@ function start() {
   }
 }
 
-function lastSak(seed, lagret) {
-  sak = lagSak(seed);
+function lastSak(seed, niva, lagret) {
+  sak = lagSak(seed, niva);
   marks = lagret?.marks ?? {};
   strek = new Set(lagret?.strek ?? []);
   bom = lagret?.bom ?? 0;
   loest = lagret?.loest ?? false;
   valgtAnklage = { hvem: null, hva: null, hvor: null };
-  history.replaceState(null, '', `#sak=${seed}`);
+  history.replaceState(null, '', sakUrl(sak).replace(location.origin, ''));
+  lagreSpill();
   renderAlt();
 }
 
-function nySak() {
-  lastSak(nyttSeed(), null);
-  lagreSpill();
+function sakUrl(s) {
+  return `${location.origin}/#sak=${s.seed}${s.niva === 'middels' ? '' : `&niva=${s.niva}`}`;
+}
+
+function nySak(niva = valgtNiva) {
+  valgtNiva = niva;
+  try { localStorage.setItem(LAGRING_NIVA, niva); } catch { /* ok */ }
+  lastSak(nyttSeed(), niva, null);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -83,13 +105,13 @@ function lesJson(nokkel) {
 function lagreSpill() {
   try {
     localStorage.setItem(LAGRING_SPILL, JSON.stringify({
-      seed: sak.seed, marks, strek: [...strek], bom, loest,
+      seed: sak.seed, niva: sak.niva, marks, strek: [...strek], bom, loest,
     }));
   } catch { /* privat modus e.l. – spillet funker fint uten lagring */ }
 }
 
 function hentStats() {
-  return lesJson(LAGRING_STATS) ?? { loeste: 0, perfekte: 0, bom: 0 };
+  return { loeste: 0, perfekte: 0, bom: 0, ...lesJson(LAGRING_STATS) };
 }
 
 function lagreStats(s) {
@@ -107,9 +129,12 @@ function renderAlt() {
 }
 
 function renderIntro() {
+  const intro = INTROER[sak.seed % INTROER.length](storBokstav(sak.offer), sak.aasted);
+  const antall = ['', '', '', 'Tre', 'Fire'][sak.n];
   $('#intro').innerHTML =
-    `💀 <strong>${storBokstav(sak.offer)}</strong> er funnet død på <strong>${sak.aasted}</strong>. ` +
-    `Tre personer var til stede den kvelden – én av dem er morderen. ` +
+    `<span class="sak-badge">Sak #${sak.seed} · ${NIVAAER[sak.niva].navn}</span>` +
+    intro +
+    `${antall} personer var til stede den kvelden – én av dem er morderen. ` +
     `Finn ut <strong>hvem</strong> som gjorde det, <strong>hva</strong> som ble brukt, og <strong>hvor</strong> det skjedde.`;
 }
 
@@ -122,25 +147,27 @@ function renderAktorer() {
 }
 
 // Rutenett som i boken: mistenkte øverst.
-// Kolonner = mistenkte (0-2) + steder (3-5), rader = våpen (0-2) + steder (3-5).
+// Kolonner = mistenkte (0..n-1) + steder (n..2n-1), rader = våpen (0..n-1) + steder (n..2n-1).
 // Blokken steder×steder (nede til høyre) brukes ikke.
 function renderGrid() {
+  const n = sak.n;
   const t = $('#grid');
+  t.dataset.n = n;
   let html = '<tr><th></th>';
-  for (let c = 0; c < 6; c++) {
-    const a = c < 3 ? sak.mistenkte[c] : sak.steder[c - 3];
-    html += `<th class="${c === 2 ? 'blokk-hoyre' : ''}" title="${a.navn}">${a.emoji}</th>`;
+  for (let c = 0; c < 2 * n; c++) {
+    const a = c < n ? sak.mistenkte[c] : sak.steder[c - n];
+    html += `<th class="${c === n - 1 ? 'blokk-hoyre' : ''}" title="${a.navn}">${a.emoji}</th>`;
   }
   html += '</tr>';
 
-  for (let r = 0; r < 6; r++) {
-    const radAktor = r < 3 ? sak.vaapen[r] : sak.steder[r - 3];
-    html += `<tr><th class="rad-hode ${r === 2 ? 'blokk-bunn' : ''}" title="${radAktor.navn}">${radAktor.emoji}</th>`;
-    for (let c = 0; c < 6; c++) {
+  for (let r = 0; r < 2 * n; r++) {
+    const radAktor = r < n ? sak.vaapen[r] : sak.steder[r - n];
+    html += `<tr><th class="rad-hode ${r === n - 1 ? 'blokk-bunn' : ''}" title="${radAktor.navn}">${radAktor.emoji}</th>`;
+    for (let c = 0; c < 2 * n; c++) {
       const klasser = [];
-      if (c === 2) klasser.push('blokk-hoyre');
-      if (r === 2) klasser.push('blokk-bunn');
-      if (r >= 3 && c >= 3) {
+      if (c === n - 1) klasser.push('blokk-hoyre');
+      if (r === n - 1) klasser.push('blokk-bunn');
+      if (r >= n && c >= n) {
         html += `<td class="tom ${klasser.join(' ')}"></td>`;
         continue;
       }
@@ -159,8 +186,9 @@ function renderGrid() {
 }
 
 function cellebeskrivelse(r, c) {
-  const rad = r < 3 ? sak.vaapen[r].navn : sak.steder[r - 3].navn;
-  const kol = c < 3 ? sak.mistenkte[c].navn : sak.steder[c - 3].navn;
+  const n = sak.n;
+  const rad = r < n ? sak.vaapen[r].navn : sak.steder[r - n].navn;
+  const kol = c < n ? sak.mistenkte[c].navn : sak.steder[c - n].navn;
   return `${storBokstav(rad)} / ${kol}`;
 }
 
@@ -169,12 +197,13 @@ function cellebeskrivelse(r, c) {
 function visningsTilstand(r, c) {
   const egen = marks[`${r},${c}`];
   if (egen) return egen;
-  const br = r < 3 ? 0 : 1;
-  const bc = c < 3 ? 0 : 1;
+  const n = sak.n;
+  const br = r < n ? 0 : 1;
+  const bc = c < n ? 0 : 1;
   for (const [key, val] of Object.entries(marks)) {
     if (val !== 'ok') continue;
     const [mr, mc] = key.split(',').map(Number);
-    if ((mr < 3 ? 0 : 1) !== br || (mc < 3 ? 0 : 1) !== bc) continue;
+    if ((mr < n ? 0 : 1) !== br || (mc < n ? 0 : 1) !== bc) continue;
     if ((mr === r) !== (mc === c)) return 'auto-x'; // samme rad ELLER samme kolonne
   }
   return null;
@@ -208,6 +237,12 @@ function renderAnklage() {
     valgtAnklage.hvem === null || valgtAnklage.hva === null || valgtAnklage.hvor === null || loest;
 }
 
+function renderNivaValg() {
+  $('#nivaChips').innerHTML = Object.entries(NIVAAER).map(([id, n]) =>
+    `<button class="chip ${valgtNiva === id ? 'valgt' : ''}" data-niva="${id}">` +
+    `${n.navn} <small>${n.n}×${n.n}</small></button>`).join('');
+}
+
 // ---------- Anklage ----------
 
 function anklag() {
@@ -238,9 +273,9 @@ function anklag() {
       med ${v.navn} ${v.emoji} ${s.prep} ${s.navn} ${s.emoji}.</p>
       <p class="resultat-tekst">Under pågripelsen ropte ${m.navn}: ${sitat}</p>
       ${bom > 0 ? `<p class="hint">Oppklart med ${bom} feilanklage${bom === 1 ? '' : 'r'}.</p>` : '<p class="hint">Perfekt etterforskning – ingen feilanklager! 🌟</p>'}
-      <button class="primaer" id="knappNesteSak">🔎 Ny sak</button>
+      <button class="primaer" id="knappNesteSak">🔎 Ny sak (${NIVAAER[sak.niva].navn.toLowerCase()})</button>
       <button class="sekundaer" data-lukk>Lukk</button>`;
-    $('#knappNesteSak').onclick = () => { $('#dialogResultat').close(); nySak(); };
+    $('#knappNesteSak').onclick = () => { $('#dialogResultat').close(); nySak(sak.niva); };
   } else {
     bom++;
     stats.bom++;
@@ -275,8 +310,8 @@ function visStats() {
 }
 
 async function delSak() {
-  const url = `${location.origin}/#sak=${sak.seed}`;
-  const data = { title: 'Mordle', text: `Klarer du å oppklare sak #${sak.seed}? 🔎`, url };
+  const url = sakUrl(sak);
+  const data = { title: 'Mordle', text: `Klarer du å oppklare sak #${sak.seed} (${NIVAAER[sak.niva].navn.toLowerCase()})? 🔎`, url };
   if (navigator.share) {
     try { await navigator.share(data); return; } catch { /* avbrutt */ }
   }
@@ -313,23 +348,30 @@ $('#ledetraader').addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   const chip = e.target.closest('.chip');
   if (!chip) return;
+  if (chip.dataset.niva) {
+    valgtNiva = chip.dataset.niva;
+    renderNivaValg();
+    return;
+  }
   const { felt, i } = chip.dataset;
   valgtAnklage[felt] = valgtAnklage[felt] === Number(i) ? null : Number(i);
   renderAnklage();
 });
 
 $('#knappAnklag').addEventListener('click', anklag);
-$('#knappNy').addEventListener('click', nySak);
+$('#knappNy').addEventListener('click', () => { renderNivaValg(); $('#dialogNy').showModal(); });
+$('#knappStartNy').addEventListener('click', () => { $('#dialogNy').close(); nySak(valgtNiva); });
 $('#knappHjelp').addEventListener('click', () => $('#dialogHjelp').showModal());
 $('#knappStats').addEventListener('click', visStats);
 $('#knappDel').addEventListener('click', delSak);
 
 koblLukkeknapper($('#dialogHjelp'));
 koblLukkeknapper($('#dialogStats'));
+koblLukkeknapper($('#dialogNy'));
 
 window.addEventListener('hashchange', () => {
-  const s = seedFraHash();
-  if (s && sak && s !== sak.seed) lastSak(s, null);
+  const s = sakFraHash();
+  if (s && sak && (s.seed !== sak.seed || s.niva !== sak.niva)) lastSak(s.seed, s.niva, null);
 });
 
 // Service worker for offline/PWA
