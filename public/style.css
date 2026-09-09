@@ -309,3 +309,29 @@ main {
   #grid th { font-size: 1.1rem; }
   #grid td.celle { font-size: 1.15rem; }
 }
+
+/* ---------- Sak-badge og nivåvalg ---------- */
+
+.sak-badge {
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-style: normal;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tekst-dus);
+  margin-bottom: 6px;
+}
+
+#nivaChips { margin: 10px 0 4px; }
+#nivaChips .chip small { color: var(--tekst-dus); font-weight: 400; margin-left: 2px; }
+
+/* 4×4: ni kolonner må få plass på 375px uten scrolling */
+#grid[data-n="4"] th, #grid[data-n="4"] td.celle { width: 36px; height: 36px; }
+#grid[data-n="4"] th { font-size: 1.05rem; }
+#grid[data-n="4"] td.celle { font-size: 1.05rem; }
+@media (max-width: 400px) {
+  #grid[data-n="4"] th, #grid[data-n="4"] td.celle { width: 33px; height: 33px; }
+  #grid[data-n="4"] th { font-size: 0.95rem; }
+  #grid[data-n="4"] td.celle { font-size: 0.95rem; }
+}

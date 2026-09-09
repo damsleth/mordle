@@ -1,6 +1,6 @@
 // Mordle service worker – enkel offline-støtte.
 // Bump VERSJON ved endringer i statiske filer.
-const VERSJON = 'mordle-v2';
+const VERSJON = 'mordle-v3';
 
 const FILER = [
   '/',
