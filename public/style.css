@@ -335,3 +335,48 @@ main {
   #grid[data-n="4"] th { font-size: 0.95rem; }
   #grid[data-n="4"] td.celle { font-size: 0.95rem; }
 }
+
+/* ---------- Hint ---------- */
+
+#knappHint { display: block; margin: 8px auto 0; }
+#grid td.celle.hint-celle {
+  cursor: default;
+  box-shadow: inset 0 0 0 2px var(--gull);
+}
+
+/* ---------- Historikk ---------- */
+
+#historikk h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tekst-dus);
+  margin: 12px 0 6px;
+}
+.historikk {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.historikk li { display: flex; gap: 6px; align-items: center; }
+.historikk-rad {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--kort-kant);
+  border-radius: 10px;
+  background: var(--celle);
+  color: var(--tekst);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+}
+.historikk-rad small { color: var(--tekst-dus); }
+.ikonknapp.liten { width: 36px; height: 36px; font-size: 0.95rem; }
