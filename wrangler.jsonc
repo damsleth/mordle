@@ -1,43 +1,13 @@
-// Mordle – Cloudflare Worker med statiske assets; src/worker.js teller sidevisninger til spor (Analytics Engine).
+// Mordle – Cloudflare Worker med statiske assets. spor teller sidevisninger fra tap-workeren foran domenet.
 // Deploy: npx wrangler deploy (eller automatisk via GitHub Actions ved push til main)
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mordle",
-  "main": "src/worker.js",
   "compatibility_date": "2026-02-19",
   "assets": {
     "directory": "./public",
     "html_handling": "auto-trailing-slash",
-    "not_found_handling": "single-page-application",
-    "binding": "ASSETS",
-    "run_worker_first": [
-      "/*",
-      "!/*.js",
-      "!/*.mjs",
-      "!/*.css",
-      "!/*.map",
-      "!/*.png",
-      "!/*.jpg",
-      "!/*.jpeg",
-      "!/*.gif",
-      "!/*.svg",
-      "!/*.ico",
-      "!/*.webp",
-      "!/*.avif",
-      "!/*.woff",
-      "!/*.woff2",
-      "!/*.ttf",
-      "!/*.otf",
-      "!/*.json",
-      "!/*.webmanifest",
-      "!/*.txt",
-      "!/*.xml",
-      "!/*.mp3",
-      "!/*.mp4",
-      "!/*.webm",
-      "!/*.wasm",
-      "!/*.pdf"
-    ]
+    "not_found_handling": "single-page-application"
   },
   "workers_dev": true,
   "routes": [
@@ -53,43 +23,8 @@
       "assets": {
         "directory": "./public",
         "html_handling": "auto-trailing-slash",
-        "not_found_handling": "single-page-application",
-        "binding": "ASSETS",
-        "run_worker_first": [
-          "/*",
-          "!/*.js",
-          "!/*.mjs",
-          "!/*.css",
-          "!/*.map",
-          "!/*.png",
-          "!/*.jpg",
-          "!/*.jpeg",
-          "!/*.gif",
-          "!/*.svg",
-          "!/*.ico",
-          "!/*.webp",
-          "!/*.avif",
-          "!/*.woff",
-          "!/*.woff2",
-          "!/*.ttf",
-          "!/*.otf",
-          "!/*.json",
-          "!/*.webmanifest",
-          "!/*.txt",
-          "!/*.xml",
-          "!/*.mp3",
-          "!/*.mp4",
-          "!/*.webm",
-          "!/*.wasm",
-          "!/*.pdf"
-        ]
+        "not_found_handling": "single-page-application"
       }
     }
-  },
-  "analytics_engine_datasets": [
-    {
-      "binding": "SPOR_ANALYTICS",
-      "dataset": "spor_analytics"
-    }
-  ]
+  }
 }
